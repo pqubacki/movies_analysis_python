@@ -7,6 +7,7 @@ Created on Tue Dec  7 10:10:48 2021
 
 import sys
 import pandas as pd
+from matplotlib import pyplot as plt
 
 
 
@@ -77,7 +78,8 @@ def menu():
         
 def successfulDirectorsActors():
     print( "1. Most successful directors or actors")
-    print(df.head())
+    actors = plt.plot(df['actors'])
+    actors.show()
     
 
 def filmComparison():
@@ -94,7 +96,7 @@ def earningsAndScores():
 
 def main():
     
-    
+    global df
     df = pd.read_csv("movie_metadata.csv")
 
     menu()
