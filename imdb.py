@@ -1,417 +1,383 @@
-#Author:  Piotr Kubacki
-#Student: R00222345
+"""
+Movie Analysis Application
+Author: Piotr Kubacki
 
-import pandas as pd 
+Analyzes movie metadata from IMDB, providing insights on directors,
+actors, earnings, and various film comparisons.
+"""
+
+import pandas as pd
 import matplotlib.pyplot as plt
+from pathlib import Path
+from typing import Optional
 
-############################################### ACCESSORY FUNCTIONS #############################################################
-def readData():
 
-    """Reads dataframe from csv file dropping rows with null values. Returns clean dataframe."""
+def read_data(path: str, dropna: bool = True) -> pd.DataFrame:
+    """
+    Read movie metadata from CSV file.
 
-    df = pd.read_csv("C:\\Users\\Piotr Kubacki\\Documents\\CollegeDataScience\\Python programming\\movie_metadata.csv")
+    Args:
+        path: Path to the CSV file.
+        dropna: If True, remove rows with missing values.
 
-    df = df.dropna()
+    Returns:
+        DataFrame containing movie data.
+
+    Raises:
+        FileNotFoundError: If the CSV file does not exist.
+        pd.errors.EmptyDataError: If the CSV file is empty.
+    """
+    csv_path = Path(path)
+    if not csv_path.exists():
+        raise FileNotFoundError(f"CSV file not found: {csv_path}")
+
+    df = pd.read_csv(csv_path)
+    if dropna:
+        df = df.dropna()
 
     return df
 
-def validateInput(min, max):
 
-    """Validates user integer input acording to type and valid options range"""
+def validate_input(minimum: int, maximum: int, prompt: str = "Enter number: ") -> int:
+    """
+    Prompt user for integer input within specified range.
 
-    #sets boolean flag to be used in while loop
-    flag = True
+    Uses a loop (not recursion) to avoid stack overflow for repeated invalid input.
 
-    while flag:
+    Args:
+        minimum: Minimum acceptable value (inclusive).
+        maximum: Maximum acceptable value (inclusive).
+        prompt: Custom prompt message.
 
+    Returns:
+        Valid integer within [minimum, maximum].
+    """
+    while True:
         try:
-
-            userInput = int(input("Enter number: "))
-
+            user_input = int(input(prompt))
         except ValueError:
+            print("Input must be an integer. Try again.")
+            continue
 
-            print("Input must be integer. Try again: ")
-
+        if minimum <= user_input <= maximum:
+            return user_input
         else:
-            
-            #sets flag to false when input is valid integer and breaks the while loop
-            flag = False
-    
-    #checks additionally if input is logically valid
-    if min <= userInput <= max:
+            print(f"Value must be between {minimum} and {maximum}. Try again.")
 
-        return userInput
 
-    else:
+# ==================== QUESTION ONE: Top Directors & Actors ====================
 
-        #if input is logically not correct returns recursive call back to function itself with the same arguments
-        print("Wrong input! ")
+def _plot_horizontal_bar(names: pd.Series, values: pd.Series, title: str) -> None:
+    """
+    Create and display a horizontal bar chart.
 
-        return validateInput(min, max)
-
-############################################### QUESTION ONE ####################################################################
-def topDirectors(data):
-
-    """Displays bar plot of top directors by gross movie earnings based on user input count"""
-
-    #gets number of entries to return from the user
-    print("Enter the number of top Directors you want to display? ")
-    
-    directorCount = validateInput(1,1000)
-
-    #sorts dataframe by gross column descending
-    grossSortedData = data.sort_values(by='gross', ascending=False)
-
-    #gets directors and gross columns, remove duplicates
-    allDirectors = grossSortedData[['director_name','gross']].drop_duplicates('director_name').head(directorCount)
-
-    #sets arguments for plot
-    x = allDirectors.director_name
-    y = allDirectors.gross
-
-    #creates plot container
+    Args:
+        names: Series of entity names (x-axis).
+        values: Series of numeric values (y-axis).
+        title: Chart title.
+    """
     fig = plt.figure()
-
-    #adjusts subplot positions from bottom and left of the container
     fig.subplots_adjust(bottom=0.15, left=0.25)
-
-    #adds one subplot 
     ax = fig.add_subplot()
 
-    #adds bars
-    ax.barh(x, y)
-
-    #formaty y so its not scientific notation
-    ax.ticklabel_format(style="plain",axis="x")
-
-    #rotates x ticks so they do not overlap
+    ax.barh(names, values)
+    ax.ticklabel_format(style="plain", axis="x")
     plt.xticks(rotation=45)
-
-    #adds main title
-    plt.title("Gross Earning vs Top Directors")
-
-    #shows plot
-    plt.show()
-
-    return
-
-def topActors(data):
-
-    """Displays bar plot of top directors by gross movie earnings based on user input count"""
-
-    print("Enter the number of top Actors you want to display: ")
-
-    #gets number of entries to return from the user
-    actorsCount = validateInput(1,1000)
-
-    #sorts dataframe by gross column descending
-    grossSortedData = data.sort_values(by='gross', ascending=False)
-    
-    #gets actrors and gross columns, removes duplicates
-    #decided to use primary starring actors hence actor_1_name
-    allActors = grossSortedData[['actor_1_name','gross']].drop_duplicates('actor_1_name').head(actorsCount)
-
-    #sets arguments for plot
-    x = allActors.actor_1_name
-    y = allActors.gross
-
-    #creates plot container
-    fig = plt.figure()
-
-    #adjusts subplot positions from bottom and left of the container
-    fig.subplots_adjust(bottom=0.15, left=0.25)
-
-    #adds one subplot 
-    ax = fig.add_subplot()
-
-    #adds bars
-    ax.barh(x, y)
-
-    #formaty y so its not scientific notation
-    ax.ticklabel_format(style="plain",axis="x")
-
-    #rotates x ticks so they do not overlap
-    plt.xticks(rotation=45)
-
-    #adds main title
-    plt.title("Gross Earning vs Top Actors")
-
-    #shows plot
-    plt.show()
-
-    return
-
-############################################### QUESTION TWO ####################################################################
-def plotComparison(x, y, title, label):
-
-    """Plots comparison between two movies."""
-
-    #prints plot arguments information
-    print(x,'\n',y)
-
-    #creates plot container
-    fig = plt.figure()
-
-    #adjusts subplot positions from bottom and left of the container
-    fig.subplots_adjust(bottom=0.25, left=0.20)
-
-    #adds one subplot 
-    ax = fig.add_subplot()
-
-    #adds bars
-    ax.bar(x, y)
-
-    #formaty y so its not scientific notation
-    ax.ticklabel_format(style="plain",axis="y")
-
-    #rotates x ticks so they do not overlap
-    plt.xticks(rotation=45)
-
-    #adds y label from caller function
-    plt.ylabel(label)
-
-    #adds main title
     plt.title(title)
-
-    #shows plot
+    plt.tight_layout()
     plt.show()
+    plt.close(fig)
 
-    return
 
-def compareMovies(data):
+def top_directors(data: pd.DataFrame) -> None:
+    """
+    Display bar plot of top directors by gross movie earnings.
 
-    """Compares two titles entered by the user"""
+    Prompts user for the number of top directors to display.
+    """
+    print("Enter the number of top Directors you want to display: ")
+    director_count = validate_input(1, 1000)
 
-    #gets movie title column as array
-    movieTitleSearch = pd.array(data['movie_title'])
+    # Sort by gross and get unique directors
+    gross_sorted = data.sort_values(by='gross', ascending=False)
+    top_dirs = gross_sorted[['director_name', 'gross']].drop_duplicates(
+        'director_name'
+    ).head(director_count)
 
-    #replaces non breaking line from the and of the title using list comprehensions
-    movieTitleSearch = [title.replace('\xa0','') for title in movieTitleSearch]
+    _plot_horizontal_bar(
+        top_dirs['director_name'],
+        top_dirs['gross'],
+        "Gross Earning vs Top Directors"
+    )
 
-    #gets first title
-    movieOne = input("\nEnter first movie title: ")
-    
-    #prompts again if title not found
-    while movieOne not in movieTitleSearch:
-        movieOne = input("\nMovie title not found; Enter first movie title again: ")
 
-    #gets second title
-    movieTwo = input("\nEnter second movie title: ")
+def top_actors(data: pd.DataFrame) -> None:
+    """
+    Display bar plot of top actors by gross movie earnings.
 
-    #prompts again if title not found
-    while movieTwo not in movieTitleSearch:
-        movieTwo = input("\nMovie title not found; Enter second movie title again: ")
+    Uses primary actor (actor_1_name) to avoid duplicates across roles.
+    """
+    print("Enter the number of top Actors you want to display: ")
+    actors_count = validate_input(1, 1000)
 
-    #selects rows containing either first or second title entered by user
-    movieRows = data[data["movie_title"].str.contains(movieOne) | data["movie_title"].str.contains(movieTwo) ]
-    
-    #provides submenu for further options when movies found
-    subMenu=True
-    while subMenu:
-        
+    # Sort by gross and get unique actors
+    gross_sorted = data.sort_values(by='gross', ascending=False)
+    top_acts = gross_sorted[['actor_1_name', 'gross']].drop_duplicates(
+        'actor_1_name'
+    ).head(actors_count)
+
+    _plot_horizontal_bar(
+        top_acts['actor_1_name'],
+        top_acts['gross'],
+        "Gross Earning vs Top Actors"
+    )
+
+
+# ==================== QUESTION TWO: Film Comparison ====================
+
+def _plot_comparison(names: pd.Series, values: pd.Series, title: str, label: str) -> None:
+    """
+    Plot comparison between entities using a vertical bar chart.
+
+    Args:
+        names: Series of entity names.
+        values: Series of numeric values.
+        title: Chart title.
+        label: Y-axis label.
+    """
+    fig = plt.figure()
+    fig.subplots_adjust(bottom=0.25, left=0.20)
+    ax = fig.add_subplot()
+
+    ax.bar(names, values)
+    ax.ticklabel_format(style="plain", axis="y")
+    plt.xticks(rotation=45)
+    plt.ylabel(label)
+    plt.title(title)
+    plt.tight_layout()
+    plt.show()
+    plt.close(fig)
+
+
+def compare_movies(data: pd.DataFrame) -> None:
+    """
+    Compare two movies selected by the user across multiple metrics.
+
+    Allows user to compare IMDB scores, gross earnings, and Facebook likes.
+    """
+    # Normalize titles: remove non-breaking spaces and strip whitespace
+    data_copy = data.copy()
+    data_copy['movie_title_clean'] = (
+        data_copy['movie_title']
+        .str.replace('\xa0', '', regex=False)
+        .str.strip()
+    )
+    available_titles = set(data_copy['movie_title_clean'].values)
+
+    # Get first movie title
+    movie_one = input("\nEnter first movie title: ").strip()
+    while movie_one not in available_titles:
+        movie_one = input("Movie title not found. Enter first movie title again: ").strip()
+
+    # Get second movie title
+    movie_two = input("\nEnter second movie title: ").strip()
+    while movie_two not in available_titles:
+        movie_two = input("Movie title not found. Enter second movie title again: ").strip()
+
+    # Filter rows for selected movies
+    movie_rows = data_copy[
+        data_copy['movie_title_clean'].isin([movie_one, movie_two])
+    ]
+
+    # Submenu for comparison options
+    sub_menu = True
+    while sub_menu:
         print("""
-        -------------------------------Film comparison-------------------------------------
+        ----------------------- Film Comparison Menu -----------------------
         1. IMDB Scores
         2. Gross Earning
-        3. Movie Facebook Like
-        4. Main Menu
+        3. Movie Facebook Likes
+        4. Back to Main Menu
+        -------------------------------------------------------------------
+        """)
+
+        choice = validate_input(1, 4, "What would you like to compare? ")
+
+        if choice == 1:
+            _plot_comparison(
+                movie_rows['movie_title_clean'],
+                movie_rows['imdb_score'],
+                "IMDB Scores Comparison",
+                "IMDB Score"
+            )
+        elif choice == 2:
+            _plot_comparison(
+                movie_rows['movie_title_clean'],
+                movie_rows['gross'],
+                "Gross Earning Comparison",
+                "Gross Earning ($)"
+            )
+        elif choice == 3:
+            _plot_comparison(
+                movie_rows['movie_title_clean'],
+                movie_rows['movie_facebook_likes'],
+                "Movie Facebook Likes Comparison",
+                "Facebook Likes"
+            )
+        elif choice == 4:
+            sub_menu = False
+
+
+# ==================== QUESTION THREE: Gross Earning Distribution ====================
+
+def gross_earning_distribution(data: pd.DataFrame) -> None:
+    """
+    Plot line graph of minimum, average and maximum gross earnings over years.
+
+    Prompts user for start and end years, then visualizes distribution statistics.
+    """
+    print("Enter start year: ")
+    start_year = validate_input(1900, 2021)
+
+    print("Enter end year: ")
+    end_year = validate_input(1900, 2021)
+
+    # Filter movies by year range
+    movie_rows = data[(data["title_year"] >= start_year) & (data["title_year"] <= end_year)]
+
+    # Group by year and get descriptive statistics for gross column
+    grouped = movie_rows.groupby("title_year")['gross'].describe()
+    stats = pd.DataFrame(grouped[['min', 'mean', 'max']])
+
+    # Extract data for plotting
+    years = stats.index.tolist()
+    min_values = stats['min'].tolist()
+    mean_values = stats['mean'].tolist()
+    max_values = stats['max'].tolist()
+
+    # Create plot
+    fig = plt.figure()
+    plt.plot(years, min_values, label='Min', marker='o')
+    plt.plot(years, mean_values, label='Mean', marker='s')
+    plt.plot(years, max_values, label='Max', marker='^')
+    plt.ticklabel_format(style="plain", axis="y")
+    plt.xlabel("Year")
+    plt.ylabel("Gross Earning ($)")
+    plt.legend()
+    plt.title("Gross Earning Distribution Statistics Over Years")
+    plt.tight_layout()
+    plt.show()
+    plt.close(fig)
+
+
+# ==================== QUESTION FOUR: Self-Directing ====================
+
+def self_directing(data: pd.DataFrame) -> None:
+    """
+    Display directors who performed in the movies they directed.
+
+    Shows all self-directing directors and top 5 most frequent ones.
+    """
+    # Select relevant columns
+    all_directors = data.loc[:, ['director_name', 'actor_1_name', 'actor_2_name', 'actor_3_name']].copy()
+
+    # Check if director appears in actor columns (director also acted in their movie)
+    all_directors['self_directed'] = all_directors.apply(
+        lambda row: row['director_name'] in row.values[1:],
+        axis=1
+    )
+
+    # Filter self-directing directors and count occurrences
+    self_directed_directors = (
+        all_directors[all_directors['self_directed']]
+        [['director_name']]
+        .groupby('director_name')
+        .size()
+        .sort_values(ascending=False)
+    )
+
+    # Display results
+    print("\n" + "="*80)
+    print("List of Self-Directing Directors")
+    print("="*80)
+    for director in self_directed_directors.index:
+        print(f"  {director}")
+
+    print("\n" + "="*80)
+    print("Top 5 Most Self-Directing Directors")
+    print("="*80)
+    print(self_directed_directors.head(5))
+
+
+# ==================== QUESTION FIVE: Feature Comparison ====================
+
+def feature_comparison(data: pd.DataFrame) -> None:
+    """
+    Create scatter plots comparing IMDB score with various numerical features.
+
+    Visualizes relationships between movie features and IMDB ratings.
+    """
+    features = [
+        ('num_critic_for_reviews', 'Number of Critic Reviews'),
+        ('duration', 'Duration (minutes)'),
+        ('actor_1_facebook_likes', 'Actor 1 Facebook Likes'),
+        ('actor_2_facebook_likes', 'Actor 2 Facebook Likes'),
+        ('actor_3_facebook_likes', 'Actor 3 Facebook Likes'),
+        ('gross', 'Gross Earnings ($)'),
+        ('aspect_ratio', 'Aspect Ratio'),
+        ('num_voted_users', 'Number of Voted Users'),
+        ('director_facebook_likes', 'Director Facebook Likes'),
+        ('facenumber_in_poster', 'Face Count in Poster'),
+        ('num_user_for_reviews', 'Number of User Reviews'),
+        ('budget', 'Budget ($)'),
+    ]
+
+    for feature_col, feature_label in features:
+        fig = plt.figure()
+        plt.scatter(data[feature_col], data['imdb_score'])
+        plt.xlabel(feature_label)
+        plt.ylabel("IMDB Score")
+        plt.title(f"{feature_label} vs IMDB Score")
+        plt.tight_layout()
+        plt.show()
+        plt.close(fig)
+
+
+# ==================== MAIN MENU ====================
+
+def _display_top_menu(data: pd.DataFrame) -> None:
+    """Display submenu for top directors/actors."""
+    sub_menu = True
+
+    while sub_menu:
+        print("""
+        ----------------------Most successful directors or actors--------------------------
+        1. Top Directors
+        2. Top Actors
+        3. Main Menu
         -----------------------------------------------------------------------------------
         """)
 
-        print("What would you like to do? ")
+        choice = validate_input(1, 3, "What would you like to do? ")
 
-        #gets user valid option input
-        subMenu = validateInput(1,4)
-
-        #calls previous accessory plotComparison function with apropriate arguments
-        if subMenu==1:
-
-            plotComparison(movieRows["movie_title"],movieRows['imdb_score'], "IMDB Scores Comparison", "IMDB Score")
-
-        elif subMenu==2:
-
-            plotComparison(movieRows["movie_title"],movieRows['gross'], "Gross Earning Comparison", "Gross Earning")
-
-        elif subMenu==3:
-
-            plotComparison(movieRows["movie_title"],movieRows['movie_facebook_likes'],"Movie Facebook Likes Comparison", "Facebook Likes")
-
-        elif subMenu==4:
-
-            #sets flag false and "break the loop"
-            subMenu = False
-
-############################################### QUESTION THREE ##################################################################
-def grossEarningDistribution(data):
-    """Plots line graph of minimum, average and maximum gross earning distribution from start to end year"""
-
-    #althoug history of the movie recordings stretches to 1895 lets call valid year range for this task 1900-2021
-    print("Enter start year: ")
-
-    startYear = validateInput(1900,2021)
-
-    print("Enter end year: ")
-
-    endYear = validateInput(1900,2021)
-
-    #selects rows where year greater or equal start year
-    movieRows = data[data["title_year"] >= startYear]
-
-    #selects rows where year less or equal end year
-    movieRows = movieRows[movieRows["title_year"] <= endYear]
-
-    #groups dataframe by the year
-    movieGroup = movieRows.groupby(["title_year"])
-
-    #gets descriptive statistics for gross column for each year
-    movieGroup = movieGroup.describe()['gross']
-
-    #we are interested in columns min, mean and max 
-    movieGroup = pd.DataFrame(movieGroup[['min','mean','max']])
-
-    #extract each column to list including index (year)
-    year = movieGroup.index.tolist()
-    min  = movieGroup['min'].tolist()
-    mean  = movieGroup['mean'].tolist()
-    max  = movieGroup['max'].tolist()
-
-    #add each line to plot, format y to standard notation add labels, legend and title
-    plt.plot(year, min, label='min')
-    plt.plot(year, mean, label='mean')
-    plt.plot(year, max, label='max')
-    plt.ticklabel_format(style="plain",axis="y")
-    plt.ylabel("Gross Earning")
-    plt.legend()
-    plt.title("Gross Earning Distribution Statistics Over Years")
-
-    #shows plot
-    plt.show()
-
-    return
-
-############################################### QUESTION FOUR  ##################################################################
-def selfDirecting(data):
-
-    """Return list of directors who performed in the movies they produced"""
-
-    #selects only columns important for analysis
-    allDirectors = data.loc[:,['director_name','actor_1_name','actor_2_name','actor_3_name']]
-
-    #adds 'self_directed' column 
-    #uses apply function on each row
-    #lambda creates list from row and counts number of ocurrences of 'director_name' in list - if its greater I assume director also performed
-    allDirectors['self_directed'] = allDirectors.apply(lambda row: True if list(row).count(row['director_name']) > 1 else False, axis=1)
-
-    #selects rows where 'self_directed' value was set to True
-    #grouping will "remove duplicates", count will be used after sorting to determine most selfdirecting directors
-    selfDirectedDirectors = allDirectors[['director_name', 'self_directed']][allDirectors.self_directed == True]\
-        .groupby('director_name')\
-        .count()\
-        .sort_values('self_directed', ascending=False)
-
-    #returns list of directors
-    selfDirectedDirectorsList = selfDirectedDirectors.index.tolist()
-
-    print("----------------------------------------List of self directed directors---------------------------------------------------")
-
-    for director in selfDirectedDirectorsList:
-        print(director)
-
-    print("----------------------------------------Top 5 most self directed directors-------------------------------------------------")
-
-    #returns 5 most often selfdirected directors
-    print(selfDirectedDirectors.head(5))
-
-    return
-
-############################################### QUESTION FIVE  ##################################################################      
-def featureComparison(data):
-    """IMDB Score column vs particular numerical column in dataframe"""
-
-    df=data
-
-    #scatterplots ......
-    plt.title("num_critic_for_reviews vs imdb_score")
-    plt.xlabel("num_critic_for_reviews")
-    plt.ylabel("imdb_score")
-    plt.scatter(df.num_critic_for_reviews, df.imdb_score)
-    plt.show()
-
-    plt.title("duration vs imdb_score")
-    plt.xlabel("duration")
-    plt.ylabel("imdb_score")
-    plt.scatter(df.duration, df.imdb_score)
-    plt.show()
-
-    plt.title("actor_1_facebook_likes vs imdb_score")
-    plt.xlabel("actor_1_facebook_likes")
-    plt.ylabel("imdb_score")
-    plt.scatter(df.actor_1_facebook_likes, df.imdb_score)
-    plt.show()
-
-    plt.title("actor_2_facebook_likes vs imdb_score")
-    plt.xlabel("actor_2_facebook_likes")
-    plt.ylabel("imdb_score")
-    plt.scatter(df.actor_2_facebook_likes, df.imdb_score)
-    plt.show()
-
-    plt.title("actor_3_facebook_likes vs imdb_score")
-    plt.xlabel("actor_3_facebook_likes")
-    plt.ylabel("imdb_score")
-    plt.scatter(df.actor_3_facebook_likes, df.imdb_score)
-    plt.show()
-
-    plt.title("gross vs imdb_score")
-    plt.xlabel("gross")
-    plt.ylabel("imdb_score")
-    plt.scatter(df.gross,df.imdb_score)
-    plt.show()
-
-    plt.title("aspect_ratio vs imdb_score")
-    plt.xlabel("aspect_ratio")
-    plt.ylabel("imdb_score")
-    plt.scatter(df.aspect_ratio,df.imdb_score)
-    plt.show()
+        if choice == 1:
+            top_directors(data)
+        elif choice == 2:
+            top_actors(data)
+        elif choice == 3:
+            sub_menu = False
 
 
-    plt.title("num_voted_users vs imdb_score")
-    plt.xlabel("num_voted_users")
-    plt.ylabel("imdb_score")
-    plt.scatter(df.num_voted_users,df.imdb_score)
-    plt.show()
+def display_main_menu(data: pd.DataFrame) -> None:
+    """
+    Display main menu and handle user navigation.
 
+    Args:
+        data: DataFrame containing movie metadata.
+    """
+    main_menu = True
 
-    plt.title("director_facebook_likes vs imdb_score")
-    plt.xlabel("director_facebook_likes")
-    plt.ylabel("imdb_score")
-    plt.scatter(df.director_facebook_likes, df.imdb_score)
-    plt.show()
-
-    plt.title("facenumber_in_poster vs imdb_score")
-    plt.xlabel("facenumber_in_poster")
-    plt.ylabel("imdb_score")
-    plt.scatter(df.facenumber_in_poster, df.imdb_score)
-    plt.show()
-
-    plt.title("num_user_for_reviews vs imdb_score")
-    plt.xlabel("num_user_for_reviews")
-    plt.ylabel("imdb_score")
-    plt.scatter(df.num_user_for_reviews, df.imdb_score)
-    plt.show()
-
-    plt.title("budget vs imdb_score")
-    plt.xlabel("budget")
-    plt.ylabel("imdb_score")
-    plt.scatter(df.budget, df.imdb_score)
-    plt.show()
-
-############################################### MAIN MENU FUNCTION ##############################################################
-def displayMainMenu(data):
-
-    #sets flag for main menu
-    mainMenu=True
-
-    while mainMenu:
+    while main_menu:
         print("""
         ----------------------------------Main Menu----------------------------------------
         1. Most successful directors or actors
@@ -423,66 +389,38 @@ def displayMainMenu(data):
         -----------------------------------------------------------------------------------
         """)
 
-        print("What would you like to do? ")
+        choice = validate_input(1, 6, "What would you like to do? ")
 
-        mainMenu=validateInput(1,6)
+        if choice == 1:
+            _display_top_menu(data)
+        elif choice == 2:
+            compare_movies(data)
+        elif choice == 3:
+            gross_earning_distribution(data)
+        elif choice == 4:
+            self_directing(data)
+        elif choice == 5:
+            feature_comparison(data)
+        elif choice == 6:
+            print("\nGoodbye!")
+            main_menu = False
 
-        if mainMenu==1:
 
-            #sets flag for sub menu
-            subMenu=True
+def main() -> None:
+    """
+    Entry point for the movie analysis application.
 
-            while subMenu:
+    Loads data and launches the main menu.
+    """
+    try:
+        path = "movie_metadata.csv"
+        data = read_data(path)
+        display_main_menu(data)
+    except FileNotFoundError as e:
+        print(f"Error: {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
 
-                print("""
-                ----------------------Most successful directors or actors--------------------------
-                1. Top Directors
-                2. Top Actors
-                3. Main Menu
-                -----------------------------------------------------------------------------------
-                """)
 
-                print("What would you like to do? ")
-
-                subMenu = validateInput(1,3)
-
-                if subMenu == 1:
-
-                    topDirectors(data)
-
-                elif subMenu == 2:
-
-                    topActors(data)
-
-                elif subMenu == 3:
-                    #exit submenu loop
-                     subMenu = False
-
-        elif mainMenu == 2:
-
-            compareMovies(data)
-
-        elif mainMenu == 3:
-
-            grossEarningDistribution(data)
-
-        elif mainMenu == 4:
-
-            selfDirecting(data)
-
-        elif mainMenu == 5:
-
-            featureComparison(data)
-
-        elif mainMenu == 6:
-
-            print("\n Goodbye")
-            #set main flag to false exits main menu loop
-            mainMenu = False
-            
-#main definition
-def main():
-    data = readData()
-    displayMainMenu(data)
-
-main()
+if __name__ == "__main__":
+    main()
